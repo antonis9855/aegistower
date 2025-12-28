@@ -1,3 +1,4 @@
+
 #include "sgg/graphics.h"
 
 int main() {
