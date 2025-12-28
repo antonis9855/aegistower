@@ -136,12 +136,18 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="collisions.cpp" />
+    <ClCompile Include="globalstate.cpp" />
+    <ClCompile Include="globalstate.h" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="widget.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="astar.h" />
+    <ClInclude Include="button.h" />
+    <ClInclude Include="display.h" />
     <ClInclude Include="types.h" />
     <ClInclude Include="vector2.h" />
+    <ClInclude Include="widget.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
