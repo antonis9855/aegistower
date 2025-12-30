@@ -135,6 +135,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="astar.cpp" />
     <ClCompile Include="collisions.cpp" />
     <ClCompile Include="globalstate.cpp" />
     <ClCompile Include="globalstate.h" />
