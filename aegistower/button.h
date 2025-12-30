@@ -45,10 +45,16 @@ public:
             m_widget_brush.texture = Globalstate::getInstance()->getImagesDir() + m_button_texture;  
         }
     }
+
     Button_type getButtonType() const { return m_type_of_button; }
     int getGoldWorth() const { return m_gold_worth; }
+   
+    bool check_if_selected() const { return m_is_selected; }
+    void set_to_selected(bool selected) { m_is_selected == selected; }
+
 private:
     Button_type m_type_of_button;
     std::string m_texture_name;
     int m_gold_worth;
+    bool m_is_selected;
 };
