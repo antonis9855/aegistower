@@ -1,0 +1,86 @@
+# AEGIS TOWER DEFENSE - BUG FIX REPORT
+
+## BUGS FOUND AND FIXED
+
+### 1. TOWER PLACEMENT NOT WORKING
+**Problem:** The `placeTower()` function was completely commented out.
+**Location:** globalstate.cpp line 283-303
+**Fix:** Uncommented and restored the tower placement code.
+
+### 2. PROJECTILES SHOOTING AT HIGH SPEED
+**Problem:** Projectile speed was set to 400.0f which was too fast.
+**Location:** globalstate.cpp `updateTowers()` function
+**Fix:** Reduced projectile speed to 300.0f for better visibility.
+
+### 3. ENEMY MOVEMENT TOO SLOW/BROKEN
+**Problem:** Enemy movement had `* 0.09;;` (double semicolon and wrong multiplier).
+**Location:** globalstate.cpp line 252
+**Fix:** Removed the 0.09 multiplier and fixed the double semicolon.
+
+### 4. TOWER DRAWING COMMENTED OUT
+**Problem:** Tower rendering code was commented out in `draw_playingmode()`.
+**Location:** globalstate.cpp line 447-468
+**Fix:** Uncommented and restored tower drawing.
+
+### 5. TOWER RANGE PREVIEW COMMENTED OUT
+**Problem:** The green range circle when placing towers was commented out.
+**Location:** globalstate.cpp line 448-460
+**Fix:** Uncommented and restored the range preview.
+
+### 6. BUTTON TEXT POSITIONING BAD
+**Problem:** Text position calculation was incorrect, causing overlapping.
+**Location:** widget.cpp `calculate_text_position()` function
+**Fix:** Improved text width calculation using `m_font_size * m_font_text.length() * 0.5f`.
+
+### 7. UI OVERLAPPING GAME AREA
+**Problem:** UI panel was starting at y=880 but game was checking y<880.
+**Location:** globalstate.cpp multiple places
+**Fix:** Changed UI to start at y=900 and game area check to y<900.
+
+### 8. UNUSED CODE AND VARIABLES
+**Problem:** Several unused variables and dead code present.
+**Removed:**
+- `keepDrawing` static variable
+- `savedBrush` static variable
+- `m_is_selected` in Button (unused)
+- `Circle` struct (unused)
+- Hover color variables (unused)
+- Click color variables (unused)
+
+### 9. WRONG ENEMY TEXTURE PATH
+**Problem:** Code was looking for "enemies/goblin.png" but file is "Enemy_type_2.png".
+**Location:** globalstate.cpp `draw_playingmode()`
+**Fix:** Changed texture path to "Enemy_type_2.png".
+
+### 10. CASTLE TEXTURE CASE MISMATCH
+**Problem:** Code used "tiles/castle.png" but file is "tiles/Castle.png".
+**Location:** globalstate.cpp `drawMap()`
+**Fix:** Changed to "tiles/Castle.png".
+
+## FILES MODIFIED
+
+1. types.h - Removed unused Circle struct
+2. vector2.h - Cleaned up, no bugs
+3. collisions.h - Simplified, removed unused functions
+4. collisions.cpp - No changes needed
+5. astar.h - Cleaned up
+6. astar.cpp - No bugs
+7. widget.h - Removed unused variables
+8. widget.cpp - Fixed text positioning
+9. button.h - Removed unused m_is_selected
+10. display.h - Cleaned up
+11. globalstate.h - Removed unused variables
+12. globalstate.cpp - Major fixes (see above)
+13. main.cpp - No changes needed
+
+## SUMMARY OF CHANGES
+
+- Tower placement now works (was commented out)
+- Towers are now drawn on the map
+- Tower range preview shows when placing
+- Projectile speed reduced for visibility
+- Enemy movement fixed (removed wrong multiplier)
+- UI layout improved to not overlap
+- Text positioning fixed
+- Removed all unused code
+- Fixed texture paths to match actual files

@@ -243,7 +243,7 @@ void Globalstate::updateEnemies(float dt)
             float dx = targetPos.x - enemy->position.x;
             float dy = targetPos.y - enemy->position.y;
             float dist = Collisions::distance(enemy->position, targetPos);
-            float moveSpeed = enemy->speed * dt * 0.00125f;
+            float moveSpeed = enemy->speed * dt * 0.0025f;
 
             if (dist <= moveSpeed) {
                 enemy->position = targetPos;
@@ -444,6 +444,20 @@ void Globalstate::draw_playingmode()
 {
     drawMap();
 
+    if (m_selectedTowerType >= 0 && getMouse_pos_y() < 880.0f) {
+        graphics::Brush rangeBrush;
+        rangeBrush.fill_opacity = 0.2f;
+        rangeBrush.fill_color[0] = 0.0f;
+        rangeBrush.fill_color[1] = 1.0f;
+        rangeBrush.fill_color[2] = 0.0f;
+        rangeBrush.outline_opacity = 0.5f;
+        rangeBrush.outline_color[0] = 0.0f;
+        rangeBrush.outline_color[1] = 1.0f;
+        rangeBrush.outline_color[2] = 0.0f;
+        float ranges[] = { m_tileSize * 4, m_tileSize * 5, m_tileSize * 6, m_tileSize * 8 };
+        graphics::drawDisk(getMouse_pos_x(), getMouse_pos_y(), ranges[m_selectedTowerType], rangeBrush);
+    }
+
     float towerSize = m_tileSize * 0.9f;
     graphics::Brush towerBrush;
     towerBrush.fill_opacity = 1.0f;
@@ -488,21 +502,6 @@ void Globalstate::draw_playingmode()
     }
     else {
         graphics::drawText(750.0f, 30.0f, 25.0f, "Wave complete! Click START for next wave", txt);
-    }
-
-    if (m_selectedTowerType >= 0 && getMouse_pos_y() < 880.0f) {
-        graphics::Brush rangeBrush;
-        rangeBrush.fill_opacity = 0.3f;
-        rangeBrush.fill_color[0] = 0.0f;
-        rangeBrush.fill_color[1] = 1.0f;
-        rangeBrush.fill_color[2] = 0.0f;
-        rangeBrush.outline_opacity = 1.0f;
-        rangeBrush.outline_color[0] = 0.0f;
-        rangeBrush.outline_color[1] = 1.0f;
-        rangeBrush.outline_color[2] = 0.0f;
-        rangeBrush.outline_width = 3.0f;
-        float ranges[] = { m_tileSize * 4, m_tileSize * 5, m_tileSize * 6, m_tileSize * 8 };
-        graphics::drawDisk(getMouse_pos_x(), getMouse_pos_y(), ranges[m_selectedTowerType], rangeBrush);
     }
 }
 void Globalstate::update_gameover()
@@ -590,14 +589,13 @@ void Globalstate::update(float dt)
             if (mode_changed) break;
         }
     }
-    static bool lastMouseState = false;
+    static bool wasClickingButton = false;
 
     if (m_current_mode == GameMode::PLAYINGMODE) {
-        bool mouseY_inGame = getMouse_pos_y() < 880.0f;
-        bool mouseClicked = m_mouse.button_left_pressed && !lastMouseState;
+        bool clickedOnUI = getMouse_pos_y() >= 880.0f;
 
         if (m_selectedTowerType >= 0) {
-            if (mouseClicked && mouseY_inGame) {
+            if (m_mouse.button_left_pressed && !clickedOnUI && !wasClickingButton) {
                 int gridX, gridY;
                 screenToGrid(getMouse_pos_x(), getMouse_pos_y(), gridX, gridY);
                 if (canPlaceTower(gridX, gridY) && m_gold >= getTowerCost(m_selectedTowerType)) {
@@ -611,7 +609,7 @@ void Globalstate::update(float dt)
             }
         }
 
-        lastMouseState = m_mouse.button_left_pressed;
+        wasClickingButton = clickedOnUI && m_mouse.button_left_pressed;
     }
     if (mode_changed || last_mode != m_current_mode) {
         clearWidgets();
@@ -628,7 +626,7 @@ void Globalstate::update(float dt)
     if (m_current_mode == GameMode::PLAYINGMODE) {
         if (m_waveInProgress && m_enemiesToSpawn > 0) {
             m_enemySpawnTimer += dt;
-            if (m_enemySpawnTimer >= 1.0f) {
+            if (m_enemySpawnTimer >= 0.8f) {
                 spawnEnemy();
                 m_enemiesToSpawn--;
                 m_enemySpawnTimer = 0.0f;
@@ -661,6 +659,4 @@ void Globalstate::Run()
     graphics::setUpdateFunction([](float dt) { Globalstate::getInstance()->update(dt); });
     graphics::startMessageLoop();
     graphics::destroyWindow();
-
-    //prosoxi edw gia meta
 }
