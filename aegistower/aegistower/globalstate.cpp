@@ -205,6 +205,8 @@ void Globalstate::nextWave()
     m_enemiesToSpawn = 5 + m_currentWave * 3;
     m_enemySpawnTimer = 0.0f;
     Astar::updateNodeWeights(m_pathNodes, m_towers);
+    spawnEnemy();
+    m_enemiesToSpawn--;
 }
 void Globalstate::spawnEnemy()
 {
@@ -243,7 +245,7 @@ void Globalstate::updateEnemies(float dt)
             float dx = targetPos.x - enemy->position.x;
             float dy = targetPos.y - enemy->position.y;
             float dist = Collisions::distance(enemy->position, targetPos);
-            float moveSpeed = enemy->speed * dt * 0.0025f;
+            float moveSpeed = enemy->speed * dt * 0.000625f;
 
             if (dist <= moveSpeed) {
                 enemy->position = targetPos;
@@ -288,7 +290,9 @@ void Globalstate::placeTower(int gridX, int gridY, int towerType)
     Tower* tower = new Tower();
     tower->id = m_nextTowerId++;
     tower->towerType = towerType;
-    tower->position = gridToScreen(gridX, gridY);
+    Point tpos = gridToScreen(gridX, gridY);
+    tower->position.x = tpos.x;
+    tower->position.y = tpos.y;
     tower->timeSinceLastShot = 0.0f;
     tower->cost = cost;
     switch (towerType) {
@@ -318,7 +322,8 @@ void Globalstate::updateTowers(float dt)
             if (target) {
                 Projectile* proj = new Projectile();
                 proj->id = m_nextProjectileId++;
-                proj->position = tower->position;
+                proj->position.x = tower->position.x;
+                proj->position.y = tower->position.y;
                 proj->targetEnemyId = target->id;
                 proj->speed = 400.0f;
                 proj->damage = tower->damage;
@@ -444,20 +449,6 @@ void Globalstate::draw_playingmode()
 {
     drawMap();
 
-    if (m_selectedTowerType >= 0 && getMouse_pos_y() < 880.0f) {
-        graphics::Brush rangeBrush;
-        rangeBrush.fill_opacity = 0.2f;
-        rangeBrush.fill_color[0] = 0.0f;
-        rangeBrush.fill_color[1] = 1.0f;
-        rangeBrush.fill_color[2] = 0.0f;
-        rangeBrush.outline_opacity = 0.5f;
-        rangeBrush.outline_color[0] = 0.0f;
-        rangeBrush.outline_color[1] = 1.0f;
-        rangeBrush.outline_color[2] = 0.0f;
-        float ranges[] = { m_tileSize * 4, m_tileSize * 5, m_tileSize * 6, m_tileSize * 8 };
-        graphics::drawDisk(getMouse_pos_x(), getMouse_pos_y(), ranges[m_selectedTowerType], rangeBrush);
-    }
-
     float towerSize = m_tileSize * 0.9f;
     graphics::Brush towerBrush;
     towerBrush.fill_opacity = 1.0f;
@@ -503,6 +494,21 @@ void Globalstate::draw_playingmode()
     else {
         graphics::drawText(750.0f, 30.0f, 25.0f, "Wave complete! Click START for next wave", txt);
     }
+
+    if (m_selectedTowerType >= 0 && getMouse_pos_y() < 880.0f) {
+        graphics::Brush rangeBrush;
+        rangeBrush.fill_opacity = 0.3f;
+        rangeBrush.fill_color[0] = 0.0f;
+        rangeBrush.fill_color[1] = 1.0f;
+        rangeBrush.fill_color[2] = 0.0f;
+        rangeBrush.outline_opacity = 1.0f;
+        rangeBrush.outline_color[0] = 0.0f;
+        rangeBrush.outline_color[1] = 1.0f;
+        rangeBrush.outline_color[2] = 0.0f;
+        rangeBrush.outline_width = 3.0f;
+        float ranges[] = { m_tileSize * 4, m_tileSize * 5, m_tileSize * 6, m_tileSize * 8 };
+        graphics::drawDisk(getMouse_pos_x(), getMouse_pos_y(), ranges[m_selectedTowerType], rangeBrush);
+    }
 }
 void Globalstate::update_gameover()
 {
@@ -541,6 +547,8 @@ void Globalstate::update(float dt)
 {
     graphics::getMouseState(m_mouse);
     static GameMode last_mode = m_current_mode;
+    static bool lastMouseState = false;
+    static int towerJustSelected = -1;
     for (Widget* widget : m_Allwidget) {
         widget->update(getMouse_pos_x(), getMouse_pos_y(), m_mouse.button_left_pressed);
     }
@@ -579,23 +587,25 @@ void Globalstate::update(float dt)
                 if (!m_waveInProgress) nextWave();
                 break;
             case Button::Tower_button:
-                if (button->getGoldWorth() == 100) m_selectedTowerType = 0;
-                else if (button->getGoldWorth() == 300) m_selectedTowerType = 1;
-                else if (button->getGoldWorth() == 800) m_selectedTowerType = 2;
-                else if (button->getGoldWorth() == 2000) m_selectedTowerType = 3;
+                if (button->getGoldWorth() == 100) { m_selectedTowerType = 0; towerJustSelected = 0; }
+                else if (button->getGoldWorth() == 300) { m_selectedTowerType = 1; towerJustSelected = 1; }
+                else if (button->getGoldWorth() == 800) { m_selectedTowerType = 2; towerJustSelected = 2; }
+                else if (button->getGoldWorth() == 2000) { m_selectedTowerType = 3; towerJustSelected = 3; }
                 break;
             default: break;
             }
             if (mode_changed) break;
         }
     }
-    static bool wasClickingButton = false;
 
     if (m_current_mode == GameMode::PLAYINGMODE) {
-        bool clickedOnUI = getMouse_pos_y() >= 880.0f;
+        bool mouseY_inGame = getMouse_pos_y() < 880.0f;
+        bool mouseClicked = m_mouse.button_left_pressed && !lastMouseState;
 
-        if (m_selectedTowerType >= 0) {
-            if (m_mouse.button_left_pressed && !clickedOnUI && !wasClickingButton) {
+        if (towerJustSelected >= 0) {
+            towerJustSelected = -1;
+        } else if (m_selectedTowerType >= 0) {
+            if (mouseClicked && mouseY_inGame) {
                 int gridX, gridY;
                 screenToGrid(getMouse_pos_x(), getMouse_pos_y(), gridX, gridY);
                 if (canPlaceTower(gridX, gridY) && m_gold >= getTowerCost(m_selectedTowerType)) {
@@ -609,7 +619,7 @@ void Globalstate::update(float dt)
             }
         }
 
-        wasClickingButton = clickedOnUI && m_mouse.button_left_pressed;
+        lastMouseState = m_mouse.button_left_pressed;
     }
     if (mode_changed || last_mode != m_current_mode) {
         clearWidgets();
@@ -626,7 +636,7 @@ void Globalstate::update(float dt)
     if (m_current_mode == GameMode::PLAYINGMODE) {
         if (m_waveInProgress && m_enemiesToSpawn > 0) {
             m_enemySpawnTimer += dt;
-            if (m_enemySpawnTimer >= 0.8f) {
+            if (m_enemySpawnTimer >= 1.0f) {
                 spawnEnemy();
                 m_enemiesToSpawn--;
                 m_enemySpawnTimer = 0.0f;
@@ -659,4 +669,6 @@ void Globalstate::Run()
     graphics::setUpdateFunction([](float dt) { Globalstate::getInstance()->update(dt); });
     graphics::startMessageLoop();
     graphics::destroyWindow();
+
+    //prosoxi edw gia meta
 }

@@ -138,14 +138,15 @@
     <ClCompile Include="astar.cpp" />
     <ClCompile Include="collisions.cpp" />
     <ClCompile Include="globalstate.cpp" />
-    <ClCompile Include="globalstate.h" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="widget.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="astar.h" />
     <ClInclude Include="button.h" />
+    <ClInclude Include="collisions.h" />
     <ClInclude Include="display.h" />
+    <ClInclude Include="globalstate.h" />
     <ClInclude Include="types.h" />
     <ClInclude Include="vector2.h" />
     <ClInclude Include="widget.h" />
