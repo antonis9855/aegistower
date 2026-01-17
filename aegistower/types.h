@@ -13,7 +13,8 @@ enum Difficulty {
     HARD = 2
 };
 struct Point {
-    float x, y;
+    float x = 0.0f;
+    float y = 0.0f;
 };
 struct PathNode {
     int id;
@@ -22,38 +23,38 @@ struct PathNode {
     std::vector<int> neighbors;
     float gCost;
     float hCost;
-    float weight;  
+    float weight;
     int parentId;
     float fCost() const { return gCost + hCost + weight; }
 };
 struct Enemy {
-    int id;
+    int id = 0;
     Point position;
-    float speed;
-    float health;
-    float maxHealth;
+    float speed = 0.0f;
+    float health = 0.0f;
+    float maxHealth = 0.0f;
     std::vector<int> path;
-    int pathIndex;
-    bool isAlive;
-    float randomWeight;  
+    int pathIndex = 0;
+    bool isAlive = false;
+    float randomWeight = 0.0f;
 };
 struct Tower {
-    int id;
-    int towerType;
+    int id = 0;
+    int towerType = 0;
     Point position;
-    float range;
-    float fireRate;
-    float damage;
-    float timeSinceLastShot;
-    int cost;
+    float range = 0.0f;
+    float fireRate = 0.0f;
+    float damage = 0.0f;
+    float timeSinceLastShot = 0.0f;
+    int cost = 0;
 };
 struct Projectile {
-    int id;
+    int id = 0;
     Point position;
-    int targetEnemyId;
-    float speed;
-    float damage;
-    bool isActive;
+    int targetEnemyId = -1;
+    float speed = 0.0f;
+    float damage = 0.0f;
+    bool isActive = false;
 };
 struct DifficultySettings {
     float enemyHealthMult;

@@ -1,13 +1,9 @@
 #pragma once
 
-// Scan codes of keyboard keys. The values are directly copied from the SDL scancode.h header file.
+
 namespace graphics
 {
-	/** The available scancode IDs for the keyboard keys. 
-	
-		For the detailed list of IDs, please see the corresponding header file [scancodes.h](@ref scancodes.h)
-	    
-	*/
+
 	typedef enum
 	{
 		SCANCODE_UNKNOWN = 0,

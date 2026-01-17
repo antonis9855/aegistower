@@ -43,4 +43,4 @@ namespace my_vec
     using Vector2i = Vector2<int>;
     using Vector2u = Vector2<unsigned int>;
     using Vector2d = Vector2<double>;
-}  
+}

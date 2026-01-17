@@ -13,7 +13,7 @@ public:
         DIFFICULTY_SELECT,
         PLAYINGMODE,
         GAME_OVER
-    };  
+    };
     ~Globalstate();
     static Globalstate* getInstance();
     std::string getImagesDir() const { return m_images_path; }
@@ -54,6 +54,7 @@ private:
     void startGame();
     void nextWave();
     void buildPathGraph();
+    Point getNodePosition(int nodeId) const;
     void spawnEnemy();
     void updateEnemies(float dt);
     void placeTower(int gridX, int gridY, int towerType);
@@ -85,7 +86,7 @@ private:
     std::vector<PathNode> m_pathNodes;
     int m_gridWidth;
     int m_gridHeight;
-    float m_tileSize;     
+    float m_tileSize;
     float m_mapOffsetX;
     float m_mapOffsetY;
     int m_spawnNodeId;

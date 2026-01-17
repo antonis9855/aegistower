@@ -11,7 +11,7 @@ public:
         RIGHT,
         BOTTOM,
         UP
-    };  
+    };
     Widget();
     virtual ~Widget() = default;
     void setPosition(float x, float y);

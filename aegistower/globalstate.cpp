@@ -6,6 +6,7 @@
 #include "collisions.h"
 #include <cstdlib>
 #include <ctime>
+#include <iostream>
 
 
 
@@ -102,6 +103,13 @@ void Globalstate::buildPathGraph()
         }
     }
 }
+Point Globalstate::getNodePosition(int nodeId) const
+{
+    for (const auto& node : m_pathNodes) {
+        if (node.id == nodeId) return node.position;
+    }
+    return {};
+}
 void Globalstate::setDifficulty(Difficulty diff)
 {
     m_difficulty = diff;
@@ -131,7 +139,7 @@ void Globalstate::startGame()
     m_gridHeight = GRID_HEIGHT;
     m_mapData.clear();
     m_mapData.resize(m_gridHeight, std::vector<int>(m_gridWidth, GRASS));
-    float playAreaHeight = m_canvas_height - 100.0f;//####
+    float playAreaHeight = m_canvas_height - 100.0f;
     float playAreaWidth = m_canvas_width;
     float tileSizeByWidth = playAreaWidth / m_gridWidth;
     float tileSizeByHeight = playAreaHeight / m_gridHeight;
@@ -197,7 +205,7 @@ void Globalstate::startGame()
     m_towerPlaced.clear();
     m_towerPlaced.resize(m_gridHeight, std::vector<bool>(m_gridWidth, false));
     buildPathGraph();
-} 
+}
 void Globalstate::nextWave()
 {
     m_currentWave++;
@@ -205,8 +213,13 @@ void Globalstate::nextWave()
     m_enemiesToSpawn = 5 + m_currentWave * 3;
     m_enemySpawnTimer = 0.0f;
     Astar::updateNodeWeights(m_pathNodes, m_towers);
+
+    std::cout << "[DEBUG] Starting wave " << m_currentWave << " with " << m_enemiesToSpawn << " enemies to spawn" << std::endl;
+
     spawnEnemy();
     m_enemiesToSpawn--;
+
+    std::cout << "[DEBUG] First enemy spawned, " << m_enemiesToSpawn << " remaining" << std::endl;
 }
 void Globalstate::spawnEnemy()
 {
@@ -220,12 +233,7 @@ void Globalstate::spawnEnemy()
     enemy->randomWeight = static_cast<float>(std::rand() % 50) / 10.0f;
     enemy->path = Astar::findPath(m_spawnNodeId, m_castleNodeId, m_pathNodes, enemy->randomWeight);
     if (!enemy->path.empty()) {
-        for (const auto& node : m_pathNodes) {
-            if (node.id == enemy->path[0]) {
-                enemy->position = node.position;
-                break;
-            }
-        }
+        enemy->position = getNodePosition(enemy->path[0]);
     }
     m_enemies.push_back(enemy);
 }
@@ -235,17 +243,11 @@ void Globalstate::updateEnemies(float dt)
         if (!enemy->isAlive) continue;
         if (enemy->pathIndex < static_cast<int>(enemy->path.size())) {
             int targetNodeId = enemy->path[enemy->pathIndex];
-            Point targetPos = {0, 0};
-            for (const auto& node : m_pathNodes) {
-                if (node.id == targetNodeId) {
-                    targetPos = node.position;
-                    break;
-                }
-            }
+            Point targetPos = getNodePosition(targetNodeId);
             float dx = targetPos.x - enemy->position.x;
             float dy = targetPos.y - enemy->position.y;
             float dist = Collisions::distance(enemy->position, targetPos);
-            float moveSpeed = enemy->speed * dt * 0.000625f;
+            float moveSpeed = enemy->speed * (dt / 1000.0f);
 
             if (dist <= moveSpeed) {
                 enemy->position = targetPos;
@@ -296,13 +298,17 @@ void Globalstate::placeTower(int gridX, int gridY, int towerType)
     tower->timeSinceLastShot = 0.0f;
     tower->cost = cost;
     switch (towerType) {
-    case 0: tower->range = m_tileSize * 4;  tower->fireRate = 0.5f; tower->damage = 15.0f; break;
-    case 1: tower->range = m_tileSize * 5;  tower->fireRate = 0.8f; tower->damage = 35.0f; break;
-    case 2: tower->range = m_tileSize * 6;  tower->fireRate = 1.2f; tower->damage = 80.0f; break;
-    case 3: tower->range = m_tileSize * 8;  tower->fireRate = 0.6f; tower->damage = 120.0f; break;
+    case 0: tower->range = m_tileSize * 4;  tower->fireRate = 500.0f; tower->damage = 15.0f; break;
+    case 1: tower->range = m_tileSize * 5;  tower->fireRate = 800.0f; tower->damage = 35.0f; break;
+    case 2: tower->range = m_tileSize * 6;  tower->fireRate = 1200.0f; tower->damage = 80.0f; break;
+    case 3: tower->range = m_tileSize * 8;  tower->fireRate = 600.0f; tower->damage = 120.0f; break;
     }
     m_towerPlaced[gridY][gridX] = true;
     m_towers.push_back(tower);
+
+
+    std::cout << "[DEBUG] Tower placed at grid(" << gridX << "," << gridY
+              << ") -> screen(" << tower->position.x << "," << tower->position.y << ")" << std::endl;
 }
 void Globalstate::updateTowers(float dt)
 {
@@ -325,11 +331,15 @@ void Globalstate::updateTowers(float dt)
                 proj->position.x = tower->position.x;
                 proj->position.y = tower->position.y;
                 proj->targetEnemyId = target->id;
-                proj->speed = 400.0f;
+                proj->speed = 600.0f;
                 proj->damage = tower->damage;
                 proj->isActive = true;
                 m_projectiles.push_back(proj);
                 tower->timeSinceLastShot = 0.0f;
+
+
+                std::cout << "[DEBUG] Projectile spawned at (" << proj->position.x << "," << proj->position.y
+                          << ") from tower at (" << tower->position.x << "," << tower->position.y << ")" << std::endl;
             }
         }
     }
@@ -352,7 +362,8 @@ void Globalstate::updateProjectiles(float dt)
         float dx = target->position.x - proj->position.x;
         float dy = target->position.y - proj->position.y;
         float dist = Collisions::distance(proj->position, target->position);
-        if (dist < 15.0f) {
+        float moveSpeed = proj->speed * (dt / 1000.0f);
+        if (dist <= 15.0f || dist <= moveSpeed) {
             target->health -= proj->damage;
             proj->isActive = false;
             if (target->health <= 0) {
@@ -360,7 +371,6 @@ void Globalstate::updateProjectiles(float dt)
                 m_gold += static_cast<int>(10 * m_diffSettings.goldMult);
             }
         } else {
-            float moveSpeed = proj->speed * dt;
             proj->position.x += (dx / dist) * moveSpeed;
             proj->position.y += (dy / dist) * moveSpeed;
         }
@@ -475,7 +485,7 @@ void Globalstate::draw_playingmode()
         hp.fill_color[0] = 1.0f - pct; hp.fill_color[1] = pct; hp.fill_color[2] = 0.0f;
         graphics::drawRect(enemy->position.x - (hpBarWidth - hpBarWidth * pct) / 2.0f, enemy->position.y - enemySize * 0.7f, hpBarWidth * pct, 3.0f, hp);
     }
-    
+
     float projSize = m_tileSize * 0.3f;
     graphics::Brush proj;
     proj.fill_color[0] = 1.0f; proj.fill_color[1] = 0.5f; proj.fill_color[2] = 0.0f;
@@ -636,7 +646,29 @@ void Globalstate::update(float dt)
     if (m_current_mode == GameMode::PLAYINGMODE) {
         if (m_waveInProgress && m_enemiesToSpawn > 0) {
             m_enemySpawnTimer += dt;
-            if (m_enemySpawnTimer >= 1.0f) {
+
+
+            static int debugFrameCount = 0;
+            if (debugFrameCount < 10) {
+                std::cout << "[DEBUG] Frame " << debugFrameCount << ": dt=" << dt
+                          << "ms, timer=" << m_enemySpawnTimer << "ms, toSpawn=" << m_enemiesToSpawn << std::endl;
+                debugFrameCount++;
+            }
+
+            bool spawnClear = true;
+            if (m_spawnNodeId >= 0) {
+                Point spawnPos = getNodePosition(m_spawnNodeId);
+                float minSpawnSpacing = m_tileSize * 0.8f;
+                for (const auto* enemy : m_enemies) {
+                    if (!enemy->isAlive) continue;
+                    if (Collisions::distance(spawnPos, enemy->position) < minSpawnSpacing) {
+                        spawnClear = false;
+                        break;
+                    }
+                }
+            }
+            if (m_enemySpawnTimer >= 1000.0f && spawnClear) {
+                std::cout << "[DEBUG] Spawning enemy! timer=" << m_enemySpawnTimer << std::endl;
                 spawnEnemy();
                 m_enemiesToSpawn--;
                 m_enemySpawnTimer = 0.0f;
@@ -670,5 +702,5 @@ void Globalstate::Run()
     graphics::startMessageLoop();
     graphics::destroyWindow();
 
-    //prosoxi edw gia meta
+
 }

@@ -6,7 +6,7 @@ Widget::Widget()
     m_widget_x(0.0f), m_widget_y(0.0f),
     m_font_text(""),
     m_color_r(0.0f), m_color_g(0.0f), m_color_b(0.0f),
-    m_is_hovered(false), m_is_clicked(false), 
+    m_is_hovered(false), m_is_clicked(false),
     m_font_path(Globalstate::getInstance()->getFontsDir()),
     m_font_size(0.0f),
     m_font_pos_x(0.0f),

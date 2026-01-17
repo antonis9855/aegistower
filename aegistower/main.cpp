@@ -1,6 +1,6 @@
 #include "sgg/graphics.h"
 #include "globalstate.h"
-int main() 
+int main()
 {
     Globalstate::getInstance()->Run();
     return 0;

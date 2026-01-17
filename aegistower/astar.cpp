@@ -54,7 +54,7 @@ namespace Astar {
                     }
                 }
             }
-            if (currentIdx == -1) return {};  
+            if (currentIdx == -1) return {};
             if (currentIdx == endIdx) {
                 std::vector<int> path;
                 int idx = endIdx;
@@ -85,7 +85,7 @@ namespace Astar {
                     }
                 }
                 if (neighborIdx == -1 || closedSet[neighborIdx]) continue;
-                float tentativeG = workNodes[currentIdx].gCost + 
+                float tentativeG = workNodes[currentIdx].gCost +
                     distance(workNodes[currentIdx].position, workNodes[neighborIdx].position) +
                     workNodes[neighborIdx].weight;
                 if (!openSet[neighborIdx]) {

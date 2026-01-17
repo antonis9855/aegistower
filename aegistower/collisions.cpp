@@ -1,8 +1,8 @@
-#include "collisions.h"  
+#include "collisions.h"
 #include <cmath>
 namespace Collisions {
     float distance(Point a, Point b) {
-        float dx = b.x - a.x;  
+        float dx = b.x - a.x;
         float dy = b.y - a.y;
         return std::sqrt(dx * dx + dy * dy);
     }

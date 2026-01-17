@@ -5,9 +5,9 @@
 class ResourceDisplay : public Widget
 {
 public:
-    ResourceDisplay(std::string texture = "", bool m_interactive = false, 
+    ResourceDisplay(std::string texture = "", bool m_interactive = false,
                     float pos_x = 320.0f, float pos_y = 890.0f,
-                    float width = 1280.0f, float height = 170.0f, 
+                    float width = 1280.0f, float height = 170.0f,
                     float r = 194.0f, float g = 151.0f, float b = 112.0f)
         : Widget()
     {
