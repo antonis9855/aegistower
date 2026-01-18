@@ -2,6 +2,7 @@
 #include "widget.h"
 #include <string>
 #include "globalstate.h"
+// Button widget me typous kai text
 class Button : public Widget
 {
 public:
@@ -35,6 +36,9 @@ public:
         this->set_text_alignment_h(h, v);
         this->set_font_size(m_font_size);
         this->setInteractive(m_interactiv);
+        m_font_brush.fill_color[0] = 1.0f;
+        m_font_brush.fill_color[1] = 1.0f;
+        m_font_brush.fill_color[2] = 1.0f;
         m_gold_worth = m_gold;
         m_type_of_button = m_type;
         m_texture_name = m_button_texture;

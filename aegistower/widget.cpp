@@ -1,6 +1,7 @@
 #include "widget.h"
 #include "sgg/graphics.h"
 #include "globalstate.h"
+// UI widget behavior (hover/click/draw)
 Widget::Widget()
     : m_widget_width(0.0f), m_widget_height(0.0f),
     m_widget_x(0.0f), m_widget_y(0.0f),

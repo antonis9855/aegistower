@@ -7,6 +7,7 @@
 #include <cstdlib>
 #include <ctime>
 #include <iostream>
+// Main game loop kai logic
 
 
 
@@ -22,7 +23,7 @@ Globalstate::Globalstate()
       m_gold(0), m_lives(0), m_currentWave(0), m_waveInProgress(false),
       m_selectedTowerType(-1), m_enemySpawnTimer(0.0f),
       m_enemiesToSpawn(0), m_nextEnemyId(0), m_nextTowerId(0), m_nextProjectileId(0),
-      m_gridWidth(0), m_gridHeight(0), m_tileSize(0.0f), m_mapOffsetX(0), m_mapOffsetY(0),
+      m_gridWidth(0), m_gridHeight(0), m_tileSizeX(0.0f), m_tileSizeY(0.0f), m_mapOffsetX(0), m_mapOffsetY(0),
       m_spawnNodeId(-1), m_castleNodeId(-1)
 {
     m_diffSettings = {1.0f, 1.0f, 1.0f, 200, 20};
@@ -50,14 +51,14 @@ void Globalstate::clearWidgets()
 Point Globalstate::gridToScreen(int gridX, int gridY) const
 {
     Point p;
-    p.x = m_mapOffsetX + gridX * m_tileSize + m_tileSize / 2.0f;
-    p.y = m_mapOffsetY + gridY * m_tileSize + m_tileSize / 2.0f;
+    p.x = m_mapOffsetX + gridX * m_tileSizeX + m_tileSizeX / 2.0f;
+    p.y = m_mapOffsetY + gridY * m_tileSizeY + m_tileSizeY / 2.0f;
     return p;
 }
 void Globalstate::screenToGrid(float screenX, float screenY, int& gridX, int& gridY) const
 {
-    gridX = static_cast<int>((screenX - m_mapOffsetX) / m_tileSize);
-    gridY = static_cast<int>((screenY - m_mapOffsetY) / m_tileSize);
+    gridX = static_cast<int>((screenX - m_mapOffsetX) / m_tileSizeX);
+    gridY = static_cast<int>((screenY - m_mapOffsetY) / m_tileSizeY);
 }
 bool Globalstate::canPlaceTower(int gridX, int gridY) const
 {
@@ -139,65 +140,87 @@ void Globalstate::startGame()
     m_gridHeight = GRID_HEIGHT;
     m_mapData.clear();
     m_mapData.resize(m_gridHeight, std::vector<int>(m_gridWidth, GRASS));
-    float playAreaHeight = m_canvas_height - 100.0f;
+    // Fill map me default GRASS
+    const float uiHeight = 100.0f;
+    float playAreaHeight = m_canvas_height - uiHeight;
     float playAreaWidth = m_canvas_width;
-    float tileSizeByWidth = playAreaWidth / m_gridWidth;
-    float tileSizeByHeight = playAreaHeight / m_gridHeight;
-    m_tileSize = (tileSizeByWidth < tileSizeByHeight) ? tileSizeByWidth : tileSizeByHeight;
-    m_tileSize = playAreaWidth / m_gridWidth;
-    float mapWidth = m_gridWidth * m_tileSize;
-    float mapHeight = m_gridHeight * m_tileSize;
-    m_mapOffsetX = (m_canvas_width - mapWidth) / 2.0f;
-    m_mapOffsetY = (playAreaHeight - mapHeight) / 2.0f;
+    m_tileSizeX = playAreaWidth / m_gridWidth;
+    m_tileSizeY = playAreaHeight / m_gridHeight;
+    m_mapOffsetX = 0.0f;
+    m_mapOffsetY = 0.0f;
+    // Build maze-like path me 1-tile width
+    auto setPath = [this](int x, int y) {
+        if (x >= 0 && x < m_gridWidth && y >= 0 && y < m_gridHeight) {
+            m_mapData[y][x] = PATH;
+        }
+    };
+    auto hLine = [&setPath](int y, int x0, int x1) {
+        if (x0 > x1) std::swap(x0, x1);
+        for (int x = x0; x <= x1; x++) setPath(x, y);
+    };
+    auto vLine = [&setPath](int x, int y0, int y1) {
+        if (y0 > y1) std::swap(y0, y1);
+        for (int y = y0; y <= y1; y++) setPath(x, y);
+    };
+
     int spawnY = m_gridHeight / 2;
+    int midY = m_gridHeight / 2;
+    int topY = 8;
+    int bottomY = m_gridHeight - 9;
+    int yA = 16;
+    int yB = 26;
+    int yC = 36;
+    int yD = 46;
+    int x1 = 8;
+    int x2 = 18;
+    int x3 = 30;
+    int x4 = 42;
+    int x5 = 54;
+
+    hLine(midY, 0, m_gridWidth - 1);
+    hLine(topY, x1, x5);
+    hLine(bottomY, x1, x5);
+    vLine(x1, topY, bottomY);
+    vLine(x3, topY, bottomY);
+    vLine(x5, topY, bottomY);
+
+    hLine(yA, x1, x3);
+    hLine(yB, x3, x5);
+    hLine(yC, x1, x3);
+    hLine(yD, x3, x5);
+
+    vLine(x2, yA, yC);
+    vLine(x4, yB, yD);
+    vLine(x2, topY, yA);
+    vLine(x4, yD, bottomY);
+
+    hLine(yA + 4, x2, x4);
+    hLine(yC - 4, x2, x4);
+
     m_mapData[spawnY][0] = SPAWN;
     m_mapData[spawnY][m_gridWidth - 1] = CASTLE;
-    for (int x = 0; x < m_gridWidth; x++) {
-        m_mapData[spawnY][x] = PATH;
-    }
-    m_mapData[spawnY][0] = SPAWN;
-    m_mapData[spawnY][m_gridWidth - 1] = CASTLE;
-    int topY = 7;
-    for (int x = 1; x < m_gridWidth - 1; x++) {
-        m_mapData[topY][x] = PATH;
-    }
-    int bottomY = m_gridHeight - 11;
-    for (int x = 1; x < m_gridWidth - 1; x++) {
-        m_mapData[bottomY][x] = PATH;
-    }
-    for (int y = topY; y <= bottomY; y++) {
-        m_mapData[y][1] = PATH;
-    }
-    for (int y = topY; y <= bottomY; y++) {
-        m_mapData[y][m_gridWidth - 2] = PATH;
-    }
-    int midX1 = 25;
-    int midX2 = 55;
-    for (int y = topY; y <= bottomY; y++) {
-        m_mapData[y][midX1] = PATH;
-        m_mapData[y][midX2] = PATH;
-    }
-    for (int y = 10; y < 16; y++) {
-        for (int x = 6; x < 12; x++) {
+
+    for (int y = 6; y < 14; y++) {
+        for (int x = 6; x < 14; x++) {
             if (m_mapData[y][x] == GRASS) m_mapData[y][x] = ROCK;
         }
     }
-    for (int y = 14; y < 20; y++) {
-        for (int x = 48; x < 56; x++) {
+    for (int y = 14; y < 22; y++) {
+        for (int x = 40; x < 50; x++) {
             if (m_mapData[y][x] == GRASS) m_mapData[y][x] = ROCK;
         }
     }
-    for (int y = 44; y < 50; y++) {
-        for (int x = 8; x < 16; x++) {
+    for (int y = 34; y < 44; y++) {
+        for (int x = 12; x < 22; x++) {
             if (m_mapData[y][x] == GRASS) m_mapData[y][x] = ROCK;
         }
     }
-    for (int y = 44; y < 50; y++) {
-        for (int x = 48; x < 56; x++) {
+    for (int y = 38; y < 50; y++) {
+        for (int x = 44; x < 54; x++) {
             if (m_mapData[y][x] == GRASS) m_mapData[y][x] = ROCK;
         }
     }
-    for (int y = 26; y < 38; y++) {
+    for (int y = 22; y < 32; y++) {
         for (int x = 26; x < 38; x++) {
             if (m_mapData[y][x] == GRASS) m_mapData[y][x] = ROCK;
         }
@@ -205,12 +228,14 @@ void Globalstate::startGame()
     m_towerPlaced.clear();
     m_towerPlaced.resize(m_gridHeight, std::vector<bool>(m_gridWidth, false));
     buildPathGraph();
-}
+    nextWave();
+} 
 void Globalstate::nextWave()
 {
     m_currentWave++;
     m_waveInProgress = true;
-    m_enemiesToSpawn = 5 + m_currentWave * 3;
+    // +2 enemies ana wave, arxi me 7
+    m_enemiesToSpawn = 7 + (m_currentWave - 1) * 2;
     m_enemySpawnTimer = 0.0f;
     Astar::updateNodeWeights(m_pathNodes, m_towers);
 
@@ -229,8 +254,9 @@ void Globalstate::spawnEnemy()
     enemy->pathIndex = 0;
     enemy->maxHealth = (50.0f + m_currentWave * 20.0f) * m_diffSettings.enemyHealthMult;
     enemy->health = enemy->maxHealth;
-    enemy->speed = (100.0f + m_currentWave * 5.0f) * m_diffSettings.enemySpeedMult;
+    enemy->speed = (70.0f + m_currentWave * 3.0f) * m_diffSettings.enemySpeedMult;
     enemy->randomWeight = static_cast<float>(std::rand() % 50) / 10.0f;
+    // Vres path apo spawn se castle
     enemy->path = Astar::findPath(m_spawnNodeId, m_castleNodeId, m_pathNodes, enemy->randomWeight);
     if (!enemy->path.empty()) {
         enemy->position = getNodePosition(enemy->path[0]);
@@ -289,6 +315,7 @@ void Globalstate::placeTower(int gridX, int gridY, int towerType)
     int cost = getTowerCost(towerType);
     if (m_gold < cost) return;
     m_gold -= cost;
+    float tileScale = (m_tileSizeX < m_tileSizeY) ? m_tileSizeX : m_tileSizeY;
     Tower* tower = new Tower();
     tower->id = m_nextTowerId++;
     tower->towerType = towerType;
@@ -298,10 +325,10 @@ void Globalstate::placeTower(int gridX, int gridY, int towerType)
     tower->timeSinceLastShot = 0.0f;
     tower->cost = cost;
     switch (towerType) {
-    case 0: tower->range = m_tileSize * 4;  tower->fireRate = 500.0f; tower->damage = 15.0f; break;
-    case 1: tower->range = m_tileSize * 5;  tower->fireRate = 800.0f; tower->damage = 35.0f; break;
-    case 2: tower->range = m_tileSize * 6;  tower->fireRate = 1200.0f; tower->damage = 80.0f; break;
-    case 3: tower->range = m_tileSize * 8;  tower->fireRate = 600.0f; tower->damage = 120.0f; break;
+    case 0: tower->range = tileScale * 4;  tower->fireRate = 500.0f; tower->damage = 15.0f; break;
+    case 1: tower->range = tileScale * 5;  tower->fireRate = 800.0f; tower->damage = 35.0f; break;
+    case 2: tower->range = tileScale * 6;  tower->fireRate = 1200.0f; tower->damage = 80.0f; break;
+    case 3: tower->range = tileScale * 8;  tower->fireRate = 600.0f; tower->damage = 120.0f; break;
     }
     m_towerPlaced[gridY][gridX] = true;
     m_towers.push_back(tower);
@@ -348,6 +375,7 @@ void Globalstate::updateProjectiles(float dt)
 {
     for (auto* proj : m_projectiles) {
         if (!proj->isActive) continue;
+        // Kinisi pros target kai hit check
         Enemy* target = nullptr;
         for (auto* enemy : m_enemies) {
             if (enemy->id == proj->targetEnemyId && enemy->isAlive) {
@@ -365,6 +393,7 @@ void Globalstate::updateProjectiles(float dt)
         float moveSpeed = proj->speed * (dt / 1000.0f);
         if (dist <= 15.0f || dist <= moveSpeed) {
             target->health -= proj->damage;
+            m_gold += static_cast<int>(10 * m_diffSettings.goldMult);
             proj->isActive = false;
             if (target->health <= 0) {
                 target->isAlive = false;
@@ -413,53 +442,46 @@ void Globalstate::drawMap()
                 brush.texture = m_images_path + "tiles/path.png";
                 break;
             }
-            graphics::drawRect(pos.x, pos.y, m_tileSize, m_tileSize, brush);
+            graphics::drawRect(pos.x, pos.y, m_tileSizeX, m_tileSizeY, brush);
         }
     }
 }
 void Globalstate::update_menu()
 {
     m_Allwidget.push_back(new ResourceDisplay("menu_backround.png", false, 0.0f, 0.0f, 1920.0f, 1080.0f));
-    m_Allwidget.push_back(new Button(Button::PLAY, 780.0f, 400.0f, "play_button.png", "PLAY", 0, 360.0f, 100.0f, Widget::CENTER, Widget::CENTER, 40.0f));
+    m_Allwidget.push_back(new Button(Button::PLAY, 780.0f, 400.0f, "play_button.png", "", 0, 360.0f, 100.0f, Widget::CENTER, Widget::CENTER, 40.0f));
     m_Allwidget.push_back(new Button(Button::QUIT, 780.0f, 520.0f, "quit_button.png", "QUIT", 0, 360.0f, 100.0f, Widget::CENTER, Widget::CENTER, 40.0f));
 }
 void Globalstate::draw_menu()
 {
     for (Widget* widget : m_Allwidget) widget->draw();
 }
-void Globalstate::update_difficulty_select()
-{
-    m_Allwidget.push_back(new ResourceDisplay("menu.png", false, 0.0f, 0.0f, 1920.0f, 1080.0f));
-    m_Allwidget.push_back(new Button(Button::BACK, 780.0f, 200.0f, "", "SELECT DIFFICULTY", 0, 360.0f, 60.0f, Widget::CENTER, Widget::CENTER, 45.0f, 50.0f, 50.0f, 50.0f, false));
-    m_Allwidget.push_back(new Button(Button::DIFFICULTY_EASY, 780.0f, 350.0f, "", "EASY", 0, 360.0f, 80.0f, Widget::CENTER, Widget::CENTER, 35.0f, 100.0f, 200.0f, 100.0f));
-    m_Allwidget.push_back(new Button(Button::DIFFICULTY_MEDIUM, 780.0f, 450.0f, "", "MEDIUM", 0, 360.0f, 80.0f, Widget::CENTER, Widget::CENTER, 35.0f, 200.0f, 200.0f, 100.0f));
-    m_Allwidget.push_back(new Button(Button::DIFFICULTY_HARD, 780.0f, 550.0f, "", "HARD", 0, 360.0f, 80.0f, Widget::CENTER, Widget::CENTER, 35.0f, 200.0f, 100.0f, 100.0f));
-    m_Allwidget.push_back(new Button(Button::BACK, 780.0f, 680.0f, "", "BACK", 0, 200.0f, 60.0f, Widget::CENTER, Widget::CENTER, 30.0f));
-}
-void Globalstate::draw_difficulty_select()
-{
-    for (Widget* widget : m_Allwidget) widget->draw();
-}
 void Globalstate::update_playingmode()
 {
-    m_Allwidget.push_back(new ResourceDisplay("", false, 0.0f, 880.0f, 1920.0f, 200.0f));
+    const float uiHeight = 100.0f;
+    const float uiY = m_canvas_height - uiHeight;
+    m_Allwidget.push_back(new ResourceDisplay("", false, 0.0f, uiY, 1920.0f, uiHeight));
     float start_x = 100.0f;
     float spacing = 130.0f;
-    float y = 920.0f;
-    m_Allwidget.push_back(new Button(Button::Tower_button, start_x, y, "BlueTower.png", "100", 100, 100.0f, 100.0f, Widget::CENTER, Widget::BOTTOM, 18.0f));
-    m_Allwidget.push_back(new Button(Button::Tower_button, start_x + spacing, y, "Purple_tower.png", "300", 300, 100.0f, 100.0f, Widget::CENTER, Widget::BOTTOM, 18.0f));
-    m_Allwidget.push_back(new Button(Button::Tower_button, start_x + 2*spacing, y, "RedTower.png", "800", 800, 100.0f, 100.0f, Widget::CENTER, Widget::BOTTOM, 18.0f));
-    m_Allwidget.push_back(new Button(Button::Tower_button, start_x + 3*spacing, y, "GoldenTower.png", "2000", 2000, 100.0f, 100.0f, Widget::CENTER, Widget::BOTTOM, 18.0f));
-    m_Allwidget.push_back(new Button(Button::START_WAVE, start_x + 4*spacing + 50.0f, y, "play_button.png", "START", 0, 100.0f, 100.0f, Widget::CENTER, Widget::BOTTOM, 20.0f));
-    m_Allwidget.push_back(new Button(Button::HEALTH, 1350.0f, y, "Castle.png", std::to_string(m_lives), 0, 80.0f, 80.0f, Widget::RIGHT, Widget::CENTER, 35.0f, 194.0f, 151.0f, 112.0f, false));
-    m_Allwidget.push_back(new Button(Button::INVENTORY, 1550.0f, y, "coins.png", std::to_string(m_gold), 0, 80.0f, 80.0f, Widget::RIGHT, Widget::CENTER, 35.0f, 194.0f, 151.0f, 112.0f, false));
-    m_Allwidget.push_back(new Button(Button::PAUSE, 1750.0f, y, "", "Wave " + std::to_string(m_currentWave), 0, 120.0f, 50.0f, Widget::CENTER, Widget::CENTER, 25.0f, 194.0f, 151.0f, 112.0f, false));
+    float y = uiY + (uiHeight - 90.0f) / 2.0f;
+    float ySmall = uiY + (uiHeight - 70.0f) / 2.0f;
+    float yTiny = uiY + (uiHeight - 40.0f) / 2.0f;
+    m_Allwidget.push_back(new Button(Button::Tower_button, start_x, y, "BlueTower.png", "100", 100, 90.0f, 90.0f, Widget::CENTER, Widget::UP, 16.0f));
+    m_Allwidget.push_back(new Button(Button::Tower_button, start_x + spacing, y, "Purple_tower.png", "300", 300, 90.0f, 90.0f, Widget::CENTER, Widget::UP, 16.0f));
+    m_Allwidget.push_back(new Button(Button::Tower_button, start_x + 2*spacing, y, "RedTower.png", "800", 800, 90.0f, 90.0f, Widget::CENTER, Widget::UP, 16.0f));
+    m_Allwidget.push_back(new Button(Button::Tower_button, start_x + 3*spacing, y, "GoldenTower.png", "2000", 2000, 90.0f, 90.0f, Widget::CENTER, Widget::UP, 16.0f));
+    m_Allwidget.push_back(new Button(Button::HEALTH, 1350.0f, ySmall, "red-pixel-heart.png", std::to_string(m_lives), 0, 70.0f, 70.0f, Widget::RIGHT, Widget::CENTER, 30.0f, 194.0f, 151.0f, 112.0f, false));
+    m_Allwidget.push_back(new Button(Button::INVENTORY, 1550.0f, ySmall, "coins.png", std::to_string(m_gold), 0, 70.0f, 70.0f, Widget::RIGHT, Widget::CENTER, 30.0f, 194.0f, 151.0f, 112.0f, false));
+    m_Allwidget.push_back(new Button(Button::PAUSE, 1750.0f, yTiny, "", "Wave " + std::to_string(m_currentWave), 0, 110.0f, 40.0f, Widget::CENTER, Widget::CENTER, 22.0f, 194.0f, 151.0f, 112.0f, false));
 }
 void Globalstate::draw_playingmode()
 {
+    const float uiHeight = 100.0f;
+    const float uiY = m_canvas_height - uiHeight;
+    float tileScale = (m_tileSizeX < m_tileSizeY) ? m_tileSizeX : m_tileSizeY;
     drawMap();
 
-    float towerSize = m_tileSize * 0.9f;
+    float towerSize = tileScale * 0.9f;
     graphics::Brush towerBrush;
     towerBrush.fill_opacity = 1.0f;
     std::string textures[] = { "BlueTower.png", "Purple_tower.png", "RedTower.png", "GoldenTower.png" };
@@ -469,7 +491,7 @@ void Globalstate::draw_playingmode()
     }
 
 
-    float enemySize = m_tileSize * 0.7f;
+    float enemySize = tileScale * 0.7f;
     graphics::Brush enemyBrush;
     enemyBrush.fill_opacity = 1.0f;
     enemyBrush.outline_opacity = 0.0f;
@@ -477,7 +499,7 @@ void Globalstate::draw_playingmode()
     for (const auto* enemy : m_enemies) {
         if (!enemy->isAlive) continue;
         graphics::drawRect(enemy->position.x, enemy->position.y, enemySize, enemySize, enemyBrush);
-        float hpBarWidth = m_tileSize * 0.8f;
+        float hpBarWidth = tileScale * 0.8f;
         graphics::Brush hpBg; hpBg.fill_color[0] = 0.3f; hpBg.fill_color[1] = 0.3f; hpBg.fill_color[2] = 0.3f;
         graphics::drawRect(enemy->position.x, enemy->position.y - enemySize * 0.7f, hpBarWidth + 2, 4.0f, hpBg);
         graphics::Brush hp;
@@ -486,7 +508,7 @@ void Globalstate::draw_playingmode()
         graphics::drawRect(enemy->position.x - (hpBarWidth - hpBarWidth * pct) / 2.0f, enemy->position.y - enemySize * 0.7f, hpBarWidth * pct, 3.0f, hp);
     }
 
-    float projSize = m_tileSize * 0.3f;
+    float projSize = tileScale * 0.3f;
     graphics::Brush proj;
     proj.fill_color[0] = 1.0f; proj.fill_color[1] = 0.5f; proj.fill_color[2] = 0.0f;
     for (const auto* p : m_projectiles) {
@@ -495,17 +517,10 @@ void Globalstate::draw_playingmode()
     for (Widget* widget : m_Allwidget) widget->draw();
     graphics::Brush txt; txt.fill_color[0] = 1.0f; txt.fill_color[1] = 1.0f; txt.fill_color[2] = 1.0f;
     graphics::setFont(m_fonts_path);
-    if (m_waveInProgress) {
-        graphics::drawText(850.0f, 30.0f, 25.0f, "Enemies: " + std::to_string(m_enemies.size() + m_enemiesToSpawn), txt);
-    }
-    else if (m_currentWave == 0) {
-        graphics::drawText(780.0f, 30.0f, 25.0f, "Click START to begin Wave 1", txt);
-    }
-    else {
-        graphics::drawText(750.0f, 30.0f, 25.0f, "Wave complete! Click START for next wave", txt);
-    }
+    graphics::drawText(820.0f, 30.0f, 25.0f, "Wave " + std::to_string(m_currentWave), txt);
+    graphics::drawText(760.0f, 60.0f, 22.0f, "Enemies: " + std::to_string(m_enemies.size() + m_enemiesToSpawn), txt);
 
-    if (m_selectedTowerType >= 0 && getMouse_pos_y() < 880.0f) {
+    if (m_selectedTowerType >= 0 && getMouse_pos_y() < uiY) {
         graphics::Brush rangeBrush;
         rangeBrush.fill_opacity = 0.3f;
         rangeBrush.fill_color[0] = 0.0f;
@@ -516,7 +531,7 @@ void Globalstate::draw_playingmode()
         rangeBrush.outline_color[1] = 1.0f;
         rangeBrush.outline_color[2] = 0.0f;
         rangeBrush.outline_width = 3.0f;
-        float ranges[] = { m_tileSize * 4, m_tileSize * 5, m_tileSize * 6, m_tileSize * 8 };
+        float ranges[] = { tileScale * 4, tileScale * 5, tileScale * 6, tileScale * 8 };
         graphics::drawDisk(getMouse_pos_x(), getMouse_pos_y(), ranges[m_selectedTowerType], rangeBrush);
     }
 }
@@ -548,7 +563,6 @@ void Globalstate::draw()
 {
     switch (m_current_mode) {
     case GameMode::MENU: draw_menu(); break;
-    case GameMode::DIFFICULTY_SELECT: draw_difficulty_select(); break;
     case GameMode::PLAYINGMODE: draw_playingmode(); break;
     case GameMode::GAME_OVER: draw_gameover(); break;
     }
@@ -568,33 +582,16 @@ void Globalstate::update(float dt)
         if (button && button->check_if_clicked()) {
             switch (button->getButtonType()) {
             case Button::PLAY:
-                m_current_mode = GameMode::DIFFICULTY_SELECT;
+                startGame();
+                m_current_mode = GameMode::PLAYINGMODE;
                 mode_changed = true;
                 break;
             case Button::QUIT:
                 graphics::stopMessageLoop();
                 break;
-            case Button::DIFFICULTY_EASY:
-                setDifficulty(EASY); startGame();
-                m_current_mode = GameMode::PLAYINGMODE;
-                mode_changed = true;
-                break;
-            case Button::DIFFICULTY_MEDIUM:
-                setDifficulty(MEDIUM); startGame();
-                m_current_mode = GameMode::PLAYINGMODE;
-                mode_changed = true;
-                break;
-            case Button::DIFFICULTY_HARD:
-                setDifficulty(HARD); startGame();
-                m_current_mode = GameMode::PLAYINGMODE;
-                mode_changed = true;
-                break;
             case Button::BACK:
                 m_current_mode = GameMode::MENU;
                 mode_changed = true;
-                break;
-            case Button::START_WAVE:
-                if (!m_waveInProgress) nextWave();
                 break;
             case Button::Tower_button:
                 if (button->getGoldWorth() == 100) { m_selectedTowerType = 0; towerJustSelected = 0; }
@@ -609,7 +606,9 @@ void Globalstate::update(float dt)
     }
 
     if (m_current_mode == GameMode::PLAYINGMODE) {
-        bool mouseY_inGame = getMouse_pos_y() < 880.0f;
+        const float uiHeight = 100.0f;
+        const float uiY = m_canvas_height - uiHeight;
+        bool mouseY_inGame = getMouse_pos_y() < uiY;
         bool mouseClicked = m_mouse.button_left_pressed && !lastMouseState;
 
         if (towerJustSelected >= 0) {
@@ -638,7 +637,6 @@ void Globalstate::update(float dt)
     if (m_Allwidget.empty()) {
         switch (m_current_mode) {
         case GameMode::MENU: update_menu(); break;
-        case GameMode::DIFFICULTY_SELECT: update_difficulty_select(); break;
         case GameMode::PLAYINGMODE: update_playingmode(); break;
         case GameMode::GAME_OVER: update_gameover(); break;
         }
@@ -658,7 +656,8 @@ void Globalstate::update(float dt)
             bool spawnClear = true;
             if (m_spawnNodeId >= 0) {
                 Point spawnPos = getNodePosition(m_spawnNodeId);
-                float minSpawnSpacing = m_tileSize * 0.8f;
+                float tileScale = (m_tileSizeX < m_tileSizeY) ? m_tileSizeX : m_tileSizeY;
+                float minSpawnSpacing = tileScale * 0.8f;
                 for (const auto* enemy : m_enemies) {
                     if (!enemy->isAlive) continue;
                     if (Collisions::distance(spawnPos, enemy->position) < minSpawnSpacing) {
@@ -677,6 +676,7 @@ void Globalstate::update(float dt)
         if (m_waveInProgress && m_enemiesToSpawn == 0 && m_enemies.empty()) {
             m_waveInProgress = false;
             m_gold += 50 + m_currentWave * 10;
+            if (m_lives > 0) nextWave();
         }
         updateEnemies(dt);
         updateTowers(dt);
@@ -696,7 +696,7 @@ void Globalstate::Run()
     init();
     graphics::createWindow(static_cast<int>(m_canvas_width), static_cast<int>(m_canvas_height), "Aegis Tower Defense");
     graphics::setCanvasSize(m_canvas_width, m_canvas_height);
-    graphics::setCanvasScaleMode(graphics::CANVAS_SCALE_FIT);
+    graphics::setCanvasScaleMode(graphics::CANVAS_SCALE_STRETCH);
     graphics::setDrawFunction([]() { Globalstate::getInstance()->draw(); });
     graphics::setUpdateFunction([](float dt) { Globalstate::getInstance()->update(dt); });
     graphics::startMessageLoop();

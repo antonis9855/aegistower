@@ -2,6 +2,7 @@
 #include <cmath>
 #include <algorithm>
 #include <limits>
+// Ypologismoi A* me weights
 namespace Astar {
     float distance(Point a, Point b) {
         float dx = b.x - a.x;

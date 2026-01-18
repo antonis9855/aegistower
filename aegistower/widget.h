@@ -1,6 +1,7 @@
 #pragma once
 #include "sgg/graphics.h"
 #include <string>
+// Vasi class gia ola ta UI widgets
 class Widget
 {
 public:

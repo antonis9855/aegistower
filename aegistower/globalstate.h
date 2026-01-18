@@ -4,22 +4,22 @@
 #include <vector>
 #include "widget.h"
 #include "types.h"
+// Kentriki katastasi paixnidiou (singleton)
 class Globalstate
 {
 public:
     enum class GameMode
     {
         MENU,
-        DIFFICULTY_SELECT,
         PLAYINGMODE,
         GAME_OVER
-    };
+    };  
     ~Globalstate();
     static Globalstate* getInstance();
     std::string getImagesDir() const { return m_images_path; }
     std::string getFontsDir() const { return m_fonts_path; }
-    float getMouse_pos_x() const { return static_cast<float>(m_mouse.cur_pos_x); }
-    float getMouse_pos_y() const { return static_cast<float>(m_mouse.cur_pos_y); }
+    float getMouse_pos_x() const { return graphics::windowToCanvasX(static_cast<float>(m_mouse.cur_pos_x)); }
+    float getMouse_pos_y() const { return graphics::windowToCanvasY(static_cast<float>(m_mouse.cur_pos_y)); }
     bool isMouseLeftPressed() const { return m_mouse.button_left_pressed; }
     void clearWidgets();
     int getGold() const { return m_gold; }
@@ -36,11 +36,9 @@ public:
     void screenToGrid(float screenX, float screenY, int& gridX, int& gridY) const;
     bool canPlaceTower(int gridX, int gridY) const;
     void update_menu();
-    void update_difficulty_select();
     void update_playingmode();
     void update_gameover();
     void draw_menu();
-    void draw_difficulty_select();
     void draw_playingmode();
     void draw_gameover();
     void drawMap();
@@ -86,7 +84,8 @@ private:
     std::vector<PathNode> m_pathNodes;
     int m_gridWidth;
     int m_gridHeight;
-    float m_tileSize;
+    float m_tileSizeX;
+    float m_tileSizeY;
     float m_mapOffsetX;
     float m_mapOffsetY;
     int m_spawnNodeId;

@@ -1,5 +1,6 @@
 #pragma once
 #include <vector>
+// Vasikoi typoi kai entities tou paixnidiou
 enum TileType {
     SPAWN = 0,
     CASTLE = 1,
@@ -16,6 +17,12 @@ struct Point {
     float x = 0.0f;
     float y = 0.0f;
 };
+// Koini vasi gia game objects (id + thesi)
+struct Entity {
+    int id = 0;
+    Point position;
+    virtual ~Entity() = default;
+};
 struct PathNode {
     int id;
     int gridX, gridY;
@@ -27,9 +34,8 @@ struct PathNode {
     int parentId;
     float fCost() const { return gCost + hCost + weight; }
 };
-struct Enemy {
-    int id = 0;
-    Point position;
+// Enemy me path kai katastasi
+struct Enemy : Entity {
     float speed = 0.0f;
     float health = 0.0f;
     float maxHealth = 0.0f;
@@ -38,19 +44,17 @@ struct Enemy {
     bool isAlive = false;
     float randomWeight = 0.0f;
 };
-struct Tower {
-    int id = 0;
+// Tower me range/fire rate/damage
+struct Tower : Entity {
     int towerType = 0;
-    Point position;
     float range = 0.0f;
     float fireRate = 0.0f;
     float damage = 0.0f;
     float timeSinceLastShot = 0.0f;
     int cost = 0;
 };
-struct Projectile {
-    int id = 0;
-    Point position;
+// Projectile pros enemy
+struct Projectile : Entity {
     int targetEnemyId = -1;
     float speed = 0.0f;
     float damage = 0.0f;

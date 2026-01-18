@@ -2,6 +2,7 @@
 #include "widget.h"
 #include "globalstate.h"
 #include <string>
+// Resource display gia textures/panel
 class ResourceDisplay : public Widget
 {
 public:

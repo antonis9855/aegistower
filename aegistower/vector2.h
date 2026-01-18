@@ -1,5 +1,6 @@
 #pragma once
 #include <cmath>
+// Aplo 2D vector me basilikes prakseis
 namespace my_vec
 {
     template<typename T>

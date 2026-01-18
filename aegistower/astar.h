@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include "types.h"
+// A* pathfinding sto graph
 namespace Astar {
     std::vector<int> findPath(
         int startNodeId,

@@ -1,5 +1,6 @@
-#include "collisions.h"
+#include "collisions.h"  
 #include <cmath>
+// Ypologismoi sygkrousis
 namespace Collisions {
     float distance(Point a, Point b) {
         float dx = b.x - a.x;
