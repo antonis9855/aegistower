@@ -146,8 +146,13 @@ void Globalstate::startGame()
     float playAreaWidth = m_canvas_width;
     m_tileSizeX = playAreaWidth / m_gridWidth;
     m_tileSizeY = playAreaHeight / m_gridHeight;
-    m_mapOffsetX = 0.0f;
-    m_mapOffsetY = 0.0f;
+    const float tileScaleUp = 1.25f;
+    m_tileSizeX *= tileScaleUp;
+    m_tileSizeY *= tileScaleUp;
+    float mapWidth = m_gridWidth * m_tileSizeX;
+    float mapHeight = m_gridHeight * m_tileSizeY;
+    m_mapOffsetX = (m_canvas_width - mapWidth) / 2.0f;
+    m_mapOffsetY = (playAreaHeight - mapHeight) / 2.0f;
     // Build maze-like path me 1-tile width
     auto setPath = [this](int x, int y) {
         if (x >= 0 && x < m_gridWidth && y >= 0 && y < m_gridHeight) {
